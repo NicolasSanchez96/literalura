@@ -1,27 +1,32 @@
 package com.nicolas.literalura.service;
 
+import com.nicolas.literalura.dto.LibroDto;
+import com.nicolas.literalura.dto.RespuestaDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.nicolas.literalura.dto.RespuestaDto;
-import org.springframework.stereotype.Service;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 @Service
 public class GutendexService {
 
     private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
 
     public GutendexService() {
         this.httpClient = HttpClient.newHttpClient();
+        this.objectMapper = new ObjectMapper();
     }
 
-    public String buscarLibros(String terminoBusqueda) throws IOException, InterruptedException {
-        String encodedBusqueda = java.net.URLEncoder.encode(terminoBusqueda, java.nio.charset.StandardCharsets.UTF_8);
-        String url = "https://gutendex.com/books/?search=" + encodedBusqueda;
+    public Optional<LibroDto> buscarLibroPorTitulo(String tituloBuscado) throws IOException, InterruptedException {
+        String url = "https://gutendex.com/books/?search=" + URLEncoder.encode(tituloBuscado, StandardCharsets.UTF_8);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -30,14 +35,12 @@ public class GutendexService {
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        return response.body();
+        RespuestaDto respuesta = objectMapper.readValue(response.body(), RespuestaDto.class);
+
+        if (respuesta.getResults() != null && !respuesta.getResults().isEmpty()) {
+            LibroDto libro = respuesta.getResults().get(0);
+            return Optional.of(libro);
+        }
+        return Optional.empty();
     }
-
-    public RespuestaDto obtenerLibros(String terminoBusqueda) throws IOException, InterruptedException {
-        String json = buscarLibros(terminoBusqueda);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(json, RespuestaDto.class);
-    }
-
 }
