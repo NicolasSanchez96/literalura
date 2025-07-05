@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LibroRepository extends JpaRepository<Libro, Long> {
 
+    long countByIdioma(String idioma);
+
 }

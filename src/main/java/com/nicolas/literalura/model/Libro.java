@@ -1,9 +1,6 @@
 package com.nicolas.literalura.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
 public class Libro {
@@ -13,20 +10,26 @@ public class Libro {
     private Long id;
 
     private String titulo;
-    private String autor;
-    private String isbn;
 
+    @ManyToOne  // Quité cascade = CascadeType.ALL
+    @JoinColumn(name = "autor_id")
+    private Autor autor;
+
+    private String idioma;
+
+    private String isbn;
 
     public Libro() {}
 
-
-    public Libro(String titulo, String autor, String isbn) {
+    public Libro(String titulo, Autor autor, String idioma, String isbn) {
         this.titulo = titulo;
         this.autor = autor;
+        this.idioma = idioma;
         this.isbn = isbn;
     }
 
     // Getters y setters
+
     public Long getId() {
         return id;
     }
@@ -39,12 +42,20 @@ public class Libro {
         this.titulo = titulo;
     }
 
-    public String getAutor() {
+    public Autor getAutor() {
         return autor;
     }
 
-    public void setAutor(String autor) {
+    public void setAutor(Autor autor) {
         this.autor = autor;
+    }
+
+    public String getIdioma() {
+        return idioma;
+    }
+
+    public void setIdioma(String idioma) {
+        this.idioma = idioma;
     }
 
     public String getIsbn() {
@@ -53,5 +64,13 @@ public class Libro {
 
     public void setIsbn(String isbn) {
         this.isbn = isbn;
+    }
+
+    @Override
+    public String toString() {
+        return "Título: " + titulo +
+                "\nAutor: " + (autor != null ? autor.getNombre() : "Desconocido") +
+                "\nIdioma: " + (idioma != null ? idioma : "Desconocido") +
+                "\nISBN: " + (isbn != null ? isbn : "N/A");
     }
 }

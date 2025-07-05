@@ -1,11 +1,17 @@
 package com.nicolas.literalura;
 
-import com.nicolas.literalura.dto.LibroDto;
+import com.nicolas.literalura.model.Autor;
+import com.nicolas.literalura.model.Libro;
 import com.nicolas.literalura.service.GutendexService;
+import com.nicolas.literalura.service.LibroService;
+import com.nicolas.literalura.repository.AutorRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Component;
+import java.util.Set;
+import java.util.HashSet;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,11 +29,15 @@ public class LiteraluraApplication {
 	public static class AplicacionPrincipal implements CommandLineRunner {
 
 		private final GutendexService gutendexService;
+		private final LibroService libroService;
+		private final AutorRepository autorRepository;
 		private final Scanner scanner = new Scanner(System.in);
-		private final List<LibroDto> librosGuardados = new ArrayList<>();
+		private final List<Libro> librosGuardados = new ArrayList<>();
 
-		public AplicacionPrincipal(GutendexService gutendexService) {
+		public AplicacionPrincipal(GutendexService gutendexService, LibroService libroService, AutorRepository autorRepository) {
 			this.gutendexService = gutendexService;
+			this.libroService = libroService;
+			this.autorRepository = autorRepository;
 		}
 
 		@Override
@@ -40,7 +50,8 @@ public class LiteraluraApplication {
 				System.out.println("2. Listar todos los libros buscados");
 				System.out.println("3. Listar autores de libros buscados");
 				System.out.println("4. Listar autores vivos en un año");
-				System.out.println("5. Salir");
+				System.out.println("5. Mostrar cantidad de libros por idioma");
+				System.out.println("6. Salir");
 				System.out.print("Elija una opción: ");
 				String opcion = scanner.nextLine();
 
@@ -58,6 +69,9 @@ public class LiteraluraApplication {
 						listarAutoresVivos();
 						break;
 					case "5":
+						mostrarCantidadLibrosPorIdioma();
+						break;
+					case "6":
 						salir = true;
 						System.out.println("Saliendo...");
 						break;
@@ -72,11 +86,15 @@ public class LiteraluraApplication {
 			String titulo = scanner.nextLine();
 
 			try {
-				Optional<LibroDto> libro = gutendexService.buscarLibroPorTitulo(titulo);
-				if (libro.isPresent()) {
-					System.out.println("Libro encontrado:");
-					System.out.println(libro.get());
-					librosGuardados.add(libro.get());
+				Optional<Libro> libroOpt = gutendexService.buscarLibroPorTituloYGuardar(titulo);
+				if (libroOpt.isPresent()) {
+					Libro libro = libroOpt.get();
+					System.out.println("Libro encontrado y guardado:");
+					System.out.println("Título: " + libro.getTitulo());
+					System.out.println("Autor: " + (libro.getAutor() != null ? libro.getAutor().getNombre() : "Desconocido"));
+					System.out.println("ISBN: " + (libro.getIsbn() != null ? libro.getIsbn() : "N/A"));
+					System.out.println("Idioma: " + (libro.getIdioma() != null ? libro.getIdioma() : "N/A"));
+					librosGuardados.add(libro);
 				} else {
 					System.out.println("No se encontraron libros con ese título.");
 				}
@@ -90,7 +108,13 @@ public class LiteraluraApplication {
 				System.out.println("No hay libros guardados.");
 			} else {
 				System.out.println("\nLibros buscados:");
-				librosGuardados.forEach(System.out::println);
+				librosGuardados.forEach(libro -> {
+					System.out.println("Título: " + libro.getTitulo());
+					System.out.println("Autor: " + (libro.getAutor() != null ? libro.getAutor().getNombre() : "Desconocido"));
+					System.out.println("ISBN: " + (libro.getIsbn() != null ? libro.getIsbn() : "N/A"));
+					System.out.println("Idioma: " + (libro.getIdioma() != null ? libro.getIdioma() : "N/A"));
+					System.out.println("---");
+				});
 			}
 		}
 
@@ -101,9 +125,9 @@ public class LiteraluraApplication {
 			}
 			System.out.println("\nAutores de libros buscados:");
 			librosGuardados.stream()
-					.map(LibroDto::getAutor)
+					.map(Libro::getAutor)
 					.distinct()
-					.forEach(System.out::println);
+					.forEach(autor -> System.out.println(autor != null ? autor.getNombre() : "Desconocido"));
 		}
 
 		private void listarAutoresVivos() {
@@ -115,14 +139,31 @@ public class LiteraluraApplication {
 					return;
 				}
 				System.out.println("\nAutores vivos en el año " + anio + ":");
+				// Usamos un Set para evitar imprimir autores repetidos
+				Set<String> autoresUnicos = new HashSet<>();
 				librosGuardados.stream()
-						.map(LibroDto::getAutor)
-						.filter(autor -> autor.viveEnAnio(anio))
-						.distinct()
-						.forEach(System.out::println);
+						.map(Libro::getAutor)
+						.filter(autor -> autor != null && autor.viveEnAnio(anio))
+						.forEach(autor -> autoresUnicos.add(autor.getNombre()));
+
+				if (autoresUnicos.isEmpty()) {
+					System.out.println("No se encontraron autores vivos en ese año.");
+				} else {
+					autoresUnicos.forEach(System.out::println);
+				}
 			} catch (NumberFormatException e) {
 				System.out.println("Por favor ingrese un número válido.");
 			}
+		}
+
+
+
+		private void mostrarCantidadLibrosPorIdioma() {
+			System.out.print("Ingrese el idioma para consultar la cantidad de libros: ");
+			String idioma = scanner.nextLine();
+
+			long cantidad = libroService.contarLibrosPorIdioma(idioma);
+			System.out.println("Cantidad de libros en idioma '" + idioma + "': " + cantidad);
 		}
 	}
 }

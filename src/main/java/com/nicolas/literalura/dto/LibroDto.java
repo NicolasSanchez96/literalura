@@ -20,6 +20,9 @@ public class LibroDto {
     @JsonAlias("download_count")
     private Integer downloadCount;
 
+    // Como no hay ISBN en la respuesta, no lo incluimos (puedes agregar si en tu API existe)
+    // private String isbn;
+
     public LibroDto() {
     }
 
@@ -38,7 +41,6 @@ public class LibroDto {
     public void setAuthors(List<AutorDto> authors) {
         this.authors = authors;
     }
-
 
     public AutorDto getAutor() {
         return (authors != null && !authors.isEmpty()) ? authors.get(0) : null;
@@ -60,10 +62,15 @@ public class LibroDto {
         this.downloadCount = downloadCount;
     }
 
+    // Método conveniente para obtener el primer idioma o null
+    public String getIdioma() {
+        return (languages != null && !languages.isEmpty()) ? languages.get(0) : null;
+    }
+
     @Override
     public String toString() {
         String autor = getAutor() != null ? getAutor().getName() : "Desconocido";
-        String idioma = (languages != null && !languages.isEmpty()) ? languages.get(0) : "Desconocido";
+        String idioma = getIdioma() != null ? getIdioma() : "Desconocido";
         return "Título: " + title +
                 "\nAutor: " + autor +
                 "\nIdioma: " + idioma +
